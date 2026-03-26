@@ -1,7 +1,13 @@
 #include "LoginDialog.h"
 #include "ui_LoginDialog.h"
+#include "UserSession.h"
+
 #include <QMessageBox>
 #include <QDebug>
+
+#include <QtSql/QSqlQuery>
+#include <QtSql/QSqlError>
+
 
 LoginDialog::LoginDialog(QWidget* parent)
     : QDialog(parent), ui(new Ui::LoginDialogClass)
@@ -17,7 +23,7 @@ LoginDialog::~LoginDialog()
 
 void LoginDialog::on_loginButton_clicked()
 {
-    QString username = ui->usernameEdit->text();
+    QString username = ui->usernameEdit->text().trimmed();
     QString password = ui->passwordEdit->text();
 
     qDebug() << "Username: " << username;
@@ -29,6 +35,7 @@ void LoginDialog::on_loginButton_clicked()
         return;
     }
 
+    /*
     // test sa vedem daca merge
     if (username == "test" && password == "1234")
     {
@@ -37,6 +44,37 @@ void LoginDialog::on_loginButton_clicked()
     else
     {
         QMessageBox::critical(this, "login esuat", "username sau parola incorecta");
+    }
+    */
+
+    QSqlQuery query;
+    query.prepare(
+        "SELECT id_user, tip_user FROM Utilizatori "
+        "WHERE username = :username AND parola = :parola"
+    );
+    query.bindValue(":username", username);
+    query.bindValue(":parola", password);
+    query.exec();
+
+    if (query.next())
+    {
+        // salvam datele in sesiune
+        UserSession::login(
+            query.value("id_user").toInt(),
+            username,
+            query.value("tip_user").toString()
+        );
+
+        //msj de bun venit
+        QString tipUser = query.value("tip_user").toString();
+        QMessageBox::information(this, "Succes",
+            "Bine ai venit, " + username + "!\nTip cont: " + tipUser);
+       
+        accept(); // inchidem dialogul
+    }
+    else
+    {
+        QMessageBox::critical(this, "Eroare", "Username sau parola incorecta");
     }
 }
 

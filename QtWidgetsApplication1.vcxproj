@@ -101,7 +101,10 @@
   <ItemGroup>
     <ClCompile Include="LoginDialog.cpp" />
     <ClCompile Include="MainWindow.cpp" />
+    <ClCompile Include="ProfileDialog.cpp" />
+    <ClCompile Include="ReservationDialog.cpp" />
     <ClCompile Include="SignUpDialog.cpp" />
+    <ClCompile Include="UserSession.cpp" />
     <QtRcc Include="QtWidgetsApplication1.qrc" />
     <ClCompile Include="main.cpp" />
     <QtUic Include="LoginDialog.ui" />
@@ -112,11 +115,14 @@
     <QtMoc Include="SignUpDialog.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="ProfileDialog.h" />
     <ClInclude Include="QtWidget.4D3CF702\x64\Debug\qt\uic\ui_LoginDialog.h" />
     <ClInclude Include="QtWidget.4D3CF702\x64\Debug\qt\uic\ui_MainWindow.h" />
+    <ClInclude Include="QtWidget.4D3CF702\x64\Debug\qt\uic\ui_SignUpDialog.h" />
+    <QtMoc Include="ReservationDialog.h" />
+    <ClInclude Include="UserSession.h" />
     <QtMoc Include="LoginDialog.h" />
     <QtMoc Include="MainWindow.h" />
-    <ClInclude Include="ui_SignUpDialog.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

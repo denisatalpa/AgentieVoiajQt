@@ -40,6 +40,15 @@
     <ClCompile Include="LoginDialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="UserSession.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ReservationDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProfileDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="SignUpDialog.h">
@@ -49,6 +58,12 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="LoginDialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="ReservationDialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="ProfileDialog.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
@@ -64,13 +79,16 @@
     </QtUic>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ui_SignUpDialog.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="QtWidget.4D3CF702\x64\Debug\qt\uic\ui_LoginDialog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="QtWidget.4D3CF702\x64\Debug\qt\uic\ui_MainWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="QtWidget.4D3CF702\x64\Debug\qt\uic\ui_SignUpDialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UserSession.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
