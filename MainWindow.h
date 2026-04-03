@@ -29,6 +29,8 @@ private:
 	Ui::MainWindowClass ui;
 	// aici ui e obiect direct, nu e pointer. de aceea in mainwindow folosim ui.ceva, iar in 
 	// signupdialog sau logindialog folosim ui->ceva
+// DE CE?
+// in mainwindow, qt visual studio wizard a generat automat obiect direct, asa ca l am pastrat
 
 	QLabel* labelStatus; // guest sau logat ca: X
 	QPushButton* butonProfilulMeu; // "contul meu"

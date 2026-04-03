@@ -9,6 +9,9 @@
 
 namespace Ui { 
 	class SignUpDialog;
+// forward declaration -in loc sa includem tot ui_SignUpDialog.h in header, spunem doar 
+//.. exista o clasa numita Ui::SignUpDialog
+// avantaj: fisierele care includ SignUpDialog nu trb sa stie nimic despre ui => compileaza mai rpd
 }
 
 
@@ -20,7 +23,9 @@ class SignUpDialog : public QDialog // SignUpDialog devine o fereastra qt
 
 public:
 	explicit SignUpDialog(QWidget* parent = nullptr); // mainwindow este parent
-// explicit = nu se poate face conversie implicita
+// explicit = previne conversiile implicite. fara asta, compilatorul ar putea converti 
+//.. automat un qwidget* la signupdialog* in anumie contexte
+
 // dc folosim parent? 1.pt managementul memoriei: qt sterge automat obiectele copil
 // adica daca mainwindow este distrus, qt distruge automat si signupdialog si logindialog
 // parent = nullptr -> fereastra poate exista si fara o fereastra parinte

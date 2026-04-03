@@ -22,6 +22,9 @@ public:
         double pretPremium,
         int locuriRegular,
         int locuriPremium);
+// de ce const qstring& in loc de qstring? pt ca const garanteaza ca nu modificam valoarea (read only)
+// & referinta- nu se face o copie a stringului, se transmite direct aa (mai eficient)
+
 
 private slots:
     void actualizeazaPret();
@@ -33,6 +36,7 @@ private:
     double m_pretPremium;
     int m_locuriRegular;
     int m_locuriPremium;
+// al fol m_ ca o conventie pt membrii clasei pt a sti imd ca este un camp al clasei
 
     QLabel* labelInfo;
     QComboBox* comboTip;

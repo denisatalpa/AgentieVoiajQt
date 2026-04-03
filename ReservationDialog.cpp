@@ -145,7 +145,7 @@ void ReservationDialog::on_rezervaButton_clicked()
 		"INSERT INTO Rezervari (id_user, id_oferta, id_categorie, numar_locuri, pret_total) "
 		"VALUES (:idUser, :idOferta, :idCategorie, :nrLocuri, :pretTotal)"
 	);
-	insertQuery.bindValue(":idUser", UserSession::id);
+	insertQuery.bindValue(":idUser", UserSession::getInstance().id);
 	insertQuery.bindValue(":idOferta", m_idOferta);
 	insertQuery.bindValue(":idCategorie", idCategorie);
 	insertQuery.bindValue(":nrLocuri", nrLocuri);

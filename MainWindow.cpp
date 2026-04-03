@@ -1,4 +1,4 @@
-#include "MainWindow.h"
+﻿#include "MainWindow.h"
 #include "LoginDialog.h"
 #include "SignUpDialog.h"
 #include "UserSession.h"
@@ -19,7 +19,8 @@
 
 void MainWindow::incarcaOferte()
 {
-    // curatam tabelul inante de a reincarca
+// curatam tabelul inante de a reincarca. daca nu am face ast, la fiecare
+//..apel s-ar adauga randuri noi peste cele vechi, rezultand duplicate
     ui.tableOffers->setRowCount(0);
 
     // cand cream un obiect cu query ul in paranteza, acesta se executa automat
@@ -30,10 +31,10 @@ void MainWindow::incarcaOferte()
         "o.pret_standard * cr.multiplicator AS pret_regular, "
         "o.pret_standard * cp.multiplicator AS pret_premium, "
 
-        // asta e un subquery (query in query ul mare)
-        // ia totalul locurilor din transporturi, scade suma locurilor deja rezervate pt oferta respectiva
-        // ISNULL(...,0) - daca nu exista nicio rezervare, SUM returneaza NULL, iar noi il
-        // inlocuim cu 0 ca sa nu stricam calculul
+// asta e un subquery (query in query ul mare)
+// ia totalul locurilor din transporturi, scade suma locurilor deja rezervate pt oferta respectiva
+// ISNULL(...,0) - daca nu exista nicio rezervare, SUM returneaza NULL, iar noi il
+// inlocuim cu 0 ca sa nu stricam calculul
         "t.locuri_totale_regular - ISNULL(( "
         "    SELECT SUM(r.numar_locuri) FROM Rezervari r "
         "    JOIN Categorii_Bilete cb ON r.id_categorie = cb.id_categorie "
@@ -64,8 +65,10 @@ void MainWindow::incarcaOferte()
 
         // salvam id_oferta ascuns in primul item (nu il afisam dar il folosim la rezervare)
         QTableWidgetItem* itemId = new QTableWidgetItem(query.value("id_oferta").toString());
-
         itemId->setData(Qt::UserRole, query.value("id_oferta").toInt());
+// id_oferta e stocat ca data ascunsa (qtȘȘuserrole) in celula. nu il afisam (coloana 0 afiseaza oras_plecare)
+// dar il pastram pentru a-l folosi la clic, altfel nu stim ce oferta a selectat userul
+
 
         //setItem(row, coloana, item) - pune o celula noua la pozitia specificata
         //query.value("oras_plecare") - ia valoarea coloanei cu numele dat din rezultatul query ului
@@ -94,21 +97,25 @@ void MainWindow::incarcaOferte()
 
 void MainWindow::actualizeazaStatus()
 {
-    if (UserSession::esteLogat)
+    if (UserSession::getInstance().esteLogat)
     {
-        if (UserSession::tipUser == "admin")
+        if (UserSession::getInstance().tipUser == "admin")
         {
-            labelStatus->setText("Admin: " + UserSession::username);
+            labelStatus->setText("Admin: " + UserSession::getInstance().username);
             labelStatus->setStyleSheet("color: red; font-weight: bold;");
         }
         else
         {
-            labelStatus->setText("Logat ca: " + UserSession::username);
+            labelStatus->setText("Logat ca: " + UserSession::getInstance().username);
             labelStatus->setStyleSheet("color: green; font-weight: bold;");
         }
         butonProfilulMeu->setVisible(true);
         ui.loginButton->setText("Delogare");
     }
+// setstylesheet() aplica css inline unui widget. folosim culori diferite pt admin (rosu) si client (verde)
+// ui.loginButton->setText() schimba textul butonului intre "autentificare" si "delogare"
+//.. acelasi buton face 2 lucruri in functie de stare (toggle behaviour)
+
     else
     {
         labelStatus->setText("Guest");
@@ -128,14 +135,22 @@ MainWindow::MainWindow(QWidget *parent)
 
     // cream labelul de status in stanga sus
     labelStatus = new QLabel("Guest", ui.centralWidget);
+// de ce centralwidget si nu this (mainwindow) ? pt ca qmainwindow are o structura speciala:
+//.. are menuBar, toolbar, status bar si in centru centralWidget
+// widgeturile pe care le afisam merg in centralWidget
+
+
     labelStatus->setGeometry(10, 10, 200, 24);
     labelStatus->setStyleSheet("color: gray;");
+
 
     // cream butonul "contul meu" langa label
     butonProfilulMeu = new QPushButton("Contul meu", ui.centralWidget);
     butonProfilulMeu->setGeometry(10, 38, 100, 24);
     butonProfilulMeu->setVisible(false); // e ascuns pana cand ne logam
     connect(butonProfilulMeu, &QPushButton::clicked, this, &MainWindow::deschideProfilulMeu);
+// butonul e creat invizibil (setvisible(false). il afisam doar dpa login in actualizeazastatus()
+// dc? e mai elegant decat sa-l stergem si recreem
 
 
 	// ca sa punem numele coloanelor pt oferte in mainwindow (ca nu gaseam "horizontalTableLabels"
@@ -173,16 +188,18 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 
+
 MainWindow::~MainWindow()
 {}
 
 
+
 void MainWindow::on_loginButton_clicked()
 {
-    if (UserSession::esteLogat)
+    if (UserSession::getInstance().esteLogat)
     {
-        //daca e logat, il delocam
-        UserSession::logout();
+        //daca e logat, il delogam
+        UserSession::getInstance().logout();
         actualizeazaStatus();
         return;
     }
@@ -195,7 +212,10 @@ void MainWindow::on_loginButton_clicked()
         actualizeazaStatus(); // updatam label-ul dupa login
     }
     // .exec() deschide dialogul in mod modal, adica blocheaza fereastra princpala pana 
-    // cand dialogul e inchis. daca folosea .show() ar fi aparut fara sa blocheze nimic
+    // cand dialogul e inchis. daca foloseam .show() ar fi aparut fara sa blocheze nimic
+
+// acelasi buton gestioneaza 2 stari: daca e logat atunci facem delogare, daca nu atunci deschide logindialog
+// verificam rezultatul lui exec, daca userul a dat accepted(adica login reusit) actualizam statusul
 }
 
 
@@ -216,7 +236,7 @@ void MainWindow::deschideProfilulMeu()
 
 void MainWindow::onOfertaSelectata(int row, int col)
 {
-    if (!UserSession::esteLogat)
+    if (!UserSession::getInstance().esteLogat)
     {
         QMessageBox::warning(this, "Atentie", "Trebuie sa fii logat pentru a face o rezervare");
         return;
@@ -225,6 +245,9 @@ void MainWindow::onOfertaSelectata(int row, int col)
     // luam datele ofertei din randul selectat
     int     idOferta = ui.tableOffers->item(row, 0)->data(Qt::UserRole).toInt();
     QString plecare = ui.tableOffers->item(row, 0)->text();
+// luam id ul din userrole(int,curat) si textul vizibil din text()
+// text() = bucuresti, data(qt::userrole) = 3 (id oferta din bd)
+
     QString destinatie = ui.tableOffers->item(row, 1)->text();
     QString dataPlecare = ui.tableOffers->item(row, 2)->text();
     QString dataIntoarcere = ui.tableOffers->item(row, 3)->text();
@@ -233,6 +256,7 @@ void MainWindow::onOfertaSelectata(int row, int col)
     double  pretPremium = ui.tableOffers->item(row, 6)->data(Qt::UserRole).toDouble();
     int     locuriRegular = ui.tableOffers->item(row, 7)->data(Qt::UserRole).toInt();
     int     locuriPremium = ui.tableOffers->item(row, 8)->data(Qt::UserRole).toInt();
+
 
     ReservationDialog rezervare
     (
@@ -244,8 +268,9 @@ void MainWindow::onOfertaSelectata(int row, int col)
     );
 
     if (rezervare.exec() == QDialog::Accepted) {
-        incarcaOferte(); // reincarcam ofertele ca sa se updateze locurile
+        incarcaOferte();
     }
-
+// dupa o rezervare reusita (accepted) reincarcam ofertele ca sa se updateze locurile disponibile
+// daca nu am face asta, tabelul ar afisa locuri vechi pana la urmatoarea deschidere a aplicatiei
 }
 

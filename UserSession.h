@@ -1,24 +1,23 @@
 #pragma once
 #include <QString>
 
-// struct care tine minte cine e logat
+
 struct UserSession {
-	static int id;
-	static QString username;
-	static QString tipUser;
-	static bool esteLogat;
+public:
+	static UserSession& getInstance();
 
-	static void login(int _id, const QString& _username, const QString& _tip) {
-		id = _id;
-		username = _username;
-		tipUser = _tip;
-		esteLogat = true;
-	}
+	//stergem constructorul d copiere si operatorul de atribuire ca sa fie imposibil sa se creeze o a doua instanta
+	UserSession(const UserSession&) = delete;
+	UserSession& operator=(const UserSession&) = delete;
 
-	static void logout() {
-		id = 0;
-		username = "";
-		tipUser = "";
-		esteLogat = false;
-	}
+	void login(int _id, const QString& _username, const QString& _tip);
+	void logout();
+
+	int id;
+	QString username;
+	QString tipUser;
+	bool esteLogat;
+
+private:
+	UserSession(); // constructorul e privat - nimeni din afara nu poate face new usersession
 };

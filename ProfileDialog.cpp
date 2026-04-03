@@ -139,7 +139,7 @@ void ProfileDialog::incarcaDateUser()
     // eficienta-queryul preparat poate fi re executat mai rapid
 
 
-    query.bindValue(":id", UserSession::id);
+    query.bindValue(":id", UserSession::getInstance().id);
     query.exec();
 // UserSession::id e un camp static din structura UserSession
 // tine minte id ul userului logat curent pe tot parcursul sesiunii
@@ -180,7 +180,7 @@ void ProfileDialog::incarcaRezervari()
         // sortam descrescator dupa data rezervarii ca sa apara cele mai recente rezervari primele
     );
 
-    query.bindValue(":idUser", UserSession::id);
+    query.bindValue(":idUser", UserSession::getInstance().id);
     query.exec();
 
 
@@ -257,7 +257,7 @@ void ProfileDialog::on_anuleazaRezervareButton_clicked()
 
 
     deleteQuery.bindValue(":id", idRezervare);
-    deleteQuery.bindValue(":idUser", UserSession::id);
+    deleteQuery.bindValue(":idUser", UserSession::getInstance().id);
 
     if (deleteQuery.exec()) {
         QMessageBox::information(this, "Succes", "Rezervarea a fost anulata cu succes.");
