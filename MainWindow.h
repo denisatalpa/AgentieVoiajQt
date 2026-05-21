@@ -8,6 +8,7 @@
 #include "ui_MainWindow.h"
 #include "DialogFactory.h"
 #include "OfertaInfo.h"
+#include "AdminDialog.h"
 
 class MainWindow : public QMainWindow // preia toate functionalitatile unei ferestre principale qt
 {
@@ -28,6 +29,7 @@ private slots:
 	void actualizeazaStatus(); // update labelul din stanga sus
 	void onOfertaSelectata(int row, int col); // click pe oferta
 	void deschideProfilulMeu();
+	void deschideAdminPanel();
 
 private:
 	Ui::MainWindowClass ui;
@@ -38,6 +40,7 @@ private:
 
 	QLabel* labelStatus; // guest sau logat ca: X
 	QPushButton* butonProfilulMeu; // "contul meu"
+	QPushButton* butonAdmin;
 
 	// lista de oferte incarcate dn bd (folosita si cu operatorii din ofertainfo)
 	QVector<OfertaInfo> m_oferte;

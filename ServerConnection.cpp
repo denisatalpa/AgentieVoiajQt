@@ -21,6 +21,11 @@ bool ServerConnection::conecteaza(const QString& ip, int port) {
     m_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (m_sock == INVALID_SOCKET) return false;
 
+    // timeout 5 secunde pentru recv() — previne blocarea UI ului
+    DWORD timeout = 5000;  // 5000 milisecunde
+    setsockopt(m_sock, SOL_SOCKET, SO_RCVTIMEO,
+        (char*)&timeout, sizeof(timeout));
+
     struct sockaddr_in server;
     server.sin_family = AF_INET;
     server.sin_port = htons(port);

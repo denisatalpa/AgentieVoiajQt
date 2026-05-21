@@ -84,15 +84,19 @@ void MainWindow::actualizeazaStatus()
     {
         if (UserSession::getInstance().tipUser == "admin")
         {
-            labelStatus->setText("Admin: " + UserSession::getInstance().username);
+            labelStatus->setText("Admin: " +
+                UserSession::getInstance().username);
             labelStatus->setStyleSheet("color: red; font-weight: bold;");
         }
         else
         {
-            labelStatus->setText("Logat ca: " + UserSession::getInstance().username);
+            labelStatus->setText("Logat ca: " +
+                UserSession::getInstance().username);
             labelStatus->setStyleSheet("color: green; font-weight: bold;");
         }
         butonProfilulMeu->setVisible(true);
+        butonAdmin->setVisible(
+            UserSession::getInstance().tipUser == "admin");
         ui.loginButton->setText("Delogare");
     }
 // setstylesheet() aplica css inline unui widget. folosim culori diferite pt admin (rosu) si client (verde)
@@ -104,6 +108,7 @@ void MainWindow::actualizeazaStatus()
         labelStatus->setText("Guest");
         labelStatus->setStyleSheet("color: gray;");
         butonProfilulMeu->setVisible(false);
+        butonAdmin->setVisible(false);
         ui.loginButton->setText("Autentificare");
     }
 }
@@ -134,6 +139,14 @@ MainWindow::MainWindow(QWidget *parent)
     connect(butonProfilulMeu, &QPushButton::clicked, this, &MainWindow::deschideProfilulMeu);
 // butonul e creat invizibil (setvisible(false). il afisam doar dpa login in actualizeazastatus()
 // dc? e mai elegant decat sa-l stergem si recreem
+
+
+    butonAdmin = new QPushButton("Admin Panel", ui.centralWidget);
+    butonAdmin->setGeometry(120, 38, 110, 24);
+    butonAdmin->setVisible(false);
+    butonAdmin->setStyleSheet("color: red; font-weight: bold;");
+    connect(butonAdmin, &QPushButton::clicked,
+        this, &MainWindow::deschideAdminPanel);
 
 
 	// ca sa punem numele coloanelor pt oferte in mainwindow (ca nu gaseam "horizontalTableLabels"
@@ -243,6 +256,13 @@ void MainWindow::deschideProfilulMeu()
     ProfileDialog profil(this);
     profil.exec();
 */
+}
+
+void MainWindow::deschideAdminPanel()
+{
+    AdminDialog admin(this);
+    admin.exec();
+    incarcaOferte(); // reincarcam dupa ce adminul a modificat ceva
 }
 
 

@@ -99,6 +99,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AdminDialog.cpp" />
     <ClCompile Include="DialogFactory.cpp" />
     <ClCompile Include="LoginDialog.cpp" />
     <ClCompile Include="MainWindow.cpp" />
@@ -118,6 +119,7 @@
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="ProfileDialog.h" />
+    <QtMoc Include="AdminDialog.h" />
     <ClInclude Include="DialogFactory.h" />
     <ClInclude Include="OfertaInfo.h" />
     <ClInclude Include="QtWidget.4D3CF702\x64\Debug\qt\uic\ui_LoginDialog.h" />
