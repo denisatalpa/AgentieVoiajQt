@@ -1,11 +1,11 @@
 #include "SignUpDialog.h"
 #include "ui_SignUpDialog.h"
+#include "ServerConnection.h"
 
 #include <QMessageBox> // pt ferestrele popup de eroare/succes
 #include <QDebug> // pt msj in consola (fol la debugging)
 
-#include <QtSql/QSqlQuery> // pt a rula query uri sql
-#include <QtSql/QSqlError> // pt a citi msj de eroare sql
+
 
 
 SignUpDialog::SignUpDialog(QWidget* parent)
@@ -42,6 +42,37 @@ void SignUpDialog::on_creeazaContButton_clicked()
 		QMessageBox::warning(this, "Eroare", "Completati toate campurile");
 		return;
 	}
+
+
+	// Trimitem comanda la server:
+	// SIGNUP|username|parola|nume|prenume|email|telefon
+	QString comanda = "SIGNUP|" + username + "|" + parola + "|" +
+		nume + "|" + prenume + "|" + email + "|" + telefon;
+
+	QStringList raspuns = ServerConnection::getInstance()
+		.trimiteComanda(comanda);
+
+	if (raspuns.isEmpty()) {
+		QMessageBox::critical(this, "Eroare", "Fara raspuns de la server.");
+		return;
+	}
+
+	QStringList parts = raspuns[0].split('|');
+
+	if (parts[0] == "OK") {
+		QMessageBox::information(this, "Succes",
+			"Cont creat cu succes! Te poti autentifica.");
+		accept();
+	}
+	else {
+		QMessageBox::warning(this, "Eroare",
+			parts.size() > 1 ? parts[1] : "Inregistrare esuata.");
+	}
+
+
+
+
+/*
 
 	// verificam daca username ul exista deja
 	// :username e un placeholder, nu punem direct textul userului
@@ -84,4 +115,6 @@ void SignUpDialog::on_creeazaContButton_clicked()
 	{
 		QMessageBox::critical(this, "Eroare", "Eroare la creare cont: " + insertQuery.lastError().text());
 	}
+*/
+
 }

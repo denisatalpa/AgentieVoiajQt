@@ -13,6 +13,18 @@ UserSession& UserSession::getInstance()
 // static aici inseamna ca instance se creeaza o singura data la primul apel si ramane in memorie pana la inchiderea app
 }
 
+/*
+bool DBConnection::conecteaza(const QString& connectionString)
+{
+	return false;
+}
+
+bool DBConnection::esteConectata() const
+{
+	return false;
+}
+*/
+
 void UserSession::login(int _id, const QString& _username, const QString& _tip)
 {
 	id = _id;

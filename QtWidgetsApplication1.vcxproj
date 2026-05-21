@@ -99,10 +99,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DialogFactory.cpp" />
     <ClCompile Include="LoginDialog.cpp" />
     <ClCompile Include="MainWindow.cpp" />
     <ClCompile Include="ProfileDialog.cpp" />
     <ClCompile Include="ReservationDialog.cpp" />
+    <ClCompile Include="ServerConnection.cpp" />
     <ClCompile Include="SignUpDialog.cpp" />
     <ClCompile Include="UserSession.cpp" />
     <QtRcc Include="QtWidgetsApplication1.qrc" />
@@ -116,10 +118,13 @@
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="ProfileDialog.h" />
+    <ClInclude Include="DialogFactory.h" />
+    <ClInclude Include="OfertaInfo.h" />
     <ClInclude Include="QtWidget.4D3CF702\x64\Debug\qt\uic\ui_LoginDialog.h" />
     <ClInclude Include="QtWidget.4D3CF702\x64\Debug\qt\uic\ui_MainWindow.h" />
     <ClInclude Include="QtWidget.4D3CF702\x64\Debug\qt\uic\ui_SignUpDialog.h" />
     <QtMoc Include="ReservationDialog.h" />
+    <ClInclude Include="ServerConnection.h" />
     <ClInclude Include="UserSession.h" />
     <QtMoc Include="LoginDialog.h" />
     <QtMoc Include="MainWindow.h" />

@@ -1,12 +1,11 @@
 #include "LoginDialog.h"
 #include "ui_LoginDialog.h"
 #include "UserSession.h"
+#include "ServerConnection.h"
 
 #include <QMessageBox>
 #include <QDebug>
 
-#include <QtSql/QSqlQuery>
-#include <QtSql/QSqlError>
 
 
 LoginDialog::LoginDialog(QWidget* parent)
@@ -54,6 +53,34 @@ void LoginDialog::on_loginButton_clicked()
     }
     */
 
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    // Trimitere comanda la server
+    QString comanda = "LOGIN|" + username + "|" + password;
+    QStringList raspuns = ServerConnection::getInstance()
+        .trimiteComanda(comanda);
+
+    if (raspuns.isEmpty()) {
+        QMessageBox::critical(this, "Eroare", "Fara raspuns de la server.");
+        return;
+    }
+
+    QStringList parts = raspuns[0].split('|');
+    if (parts[0] == "OK") {
+        // OK|id_user|tip_user
+        UserSession::getInstance().login(
+            parts[1].toInt(), username, parts[2]);
+        accept();
+    }
+    else {
+        // ERR|mesaj
+        QMessageBox::warning(this, "Eroare",
+            parts.size() > 1 ? parts[1] : "Login esuat.");
+    }
+
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    /* 
     QSqlQuery query;
     query.prepare(
         "SELECT id_user, tip_user FROM Utilizatori "
@@ -85,5 +112,7 @@ void LoginDialog::on_loginButton_clicked()
     {
         QMessageBox::critical(this, "Eroare", "Username sau parola incorecta");
     }
+    */
+
 }
 

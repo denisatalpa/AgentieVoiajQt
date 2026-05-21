@@ -1,11 +1,14 @@
 ﻿#include "ReservationDialog.h"
 #include "UserSession.h"
+#include "ServerConnection.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QLabel>
+#include <QComboBox>
+#include <QSpinBox>
+#include <QPushButton>
 #include <QMessageBox>
-#include <QtSql/QSqlQuery>
-#include <QtSql/QSqlError>
 
 ReservationDialog::ReservationDialog(QWidget* parent, 
 	int idOferta, const QString& plecare, const QString& destinatie, 
@@ -24,62 +27,62 @@ ReservationDialog::ReservationDialog(QWidget* parent,
 
 	QVBoxLayout* layout = new QVBoxLayout(this);
 
-	// informatii oferta
-	labelInfo = new QLabel(
-		QString("Ruta: %1 → %2\n"
-			"Plecare: %3 | Intoarcere: %4\n"
-			"Transport: %5\n"
-			"Locuri Regular disponibile: %6 | Pret: %7 RON\n"
-			"Locuri Premium disponibile: %8 | Pret: %9 RON")
-		.arg(plecare).arg(destinatie)
-		.arg(dataPlecare).arg(dataIntoarcere)
-		.arg(transport)
-		.arg(locuriRegular).arg(pretRegular, 0, 'f', 2)
-		.arg(locuriPremium).arg(pretPremium, 0, 'f', 2)
-	);
 
-	layout->addWidget(labelInfo);
+	// Informatii oferta
+	layout->addWidget(new QLabel(
+		"Ruta: " + plecare + " \u2192 " + destinatie));
+	layout->addWidget(new QLabel(
+		"Plecare: " + dataPlecare +
+		" | Intoarcere: " + dataIntoarcere));
+	layout->addWidget(new QLabel("Transport: " + transport));
+	layout->addWidget(new QLabel(
+		"Locuri Regular disponibile: " +
+		QString::number(locuriRegular) +
+		" | Pret: " + QString::number(pretRegular, 'f', 2) + " RON"));
+	layout->addWidget(new QLabel(
+		"Locuri Premium disponibile: " +
+		QString::number(locuriPremium) +
+		" | Pret: " + QString::number(pretPremium, 'f', 2) + " RON"));
 
-	// tip loc
-	QLabel* labelTip = new QLabel("Tip loc:");
+
+	// Tip loc
+	layout->addWidget(new QLabel("Tip loc:"));
 	comboTip = new QComboBox();
-
 	comboTip->addItem("Regular");
 	comboTip->addItem("Premium");
-
-	layout->addWidget(labelTip);
 	layout->addWidget(comboTip);
 
-
-	// numar locuri
-	QLabel* labelNr = new QLabel("Numar locuri:");
+	// Numar locuri
+	layout->addWidget(new QLabel("Numar locuri:"));
 	spinLocuri = new QSpinBox();
-
 	spinLocuri->setMinimum(1);
-	spinLocuri->setMaximum(locuriRegular); // implicit pt Regular
-	
-	layout->addWidget(labelNr);
+	spinLocuri->setMaximum(locuriRegular > 0 ? locuriRegular : 1);
 	layout->addWidget(spinLocuri);
 
-
-	// pret total
+	// Pret total
 	labelPretTotal = new QLabel("Pret total: 0.00 RON");
-	labelPretTotal->setStyleSheet("font-weight: bold; font-size: 14px;");
+	labelPretTotal->setStyleSheet("font-weight: bold;");
 	layout->addWidget(labelPretTotal);
 
-	// butoane
+
+	// Butoane
 	QHBoxLayout* btnLayout = new QHBoxLayout();
-	butonRezerva = new QPushButton("Rezerva");
-	butonAnuleaza = new QPushButton("Anuleaza");
+	QPushButton* butonRezerva = new QPushButton("Rezerva");
+	QPushButton* butonAnuleaza = new QPushButton("Anuleaza");
 	btnLayout->addWidget(butonRezerva);
 	btnLayout->addWidget(butonAnuleaza);
 	layout->addLayout(btnLayout);
 
-	// conectam semnalele
-	connect(comboTip, &QComboBox::currentTextChanged, this, &ReservationDialog::actualizeazaPret);
-	connect(spinLocuri, QOverload<int>::of(&QSpinBox::valueChanged), this, &ReservationDialog::actualizeazaPret);
-	connect(butonRezerva, &QPushButton::clicked, this, &ReservationDialog::on_rezervaButton_clicked);
-	connect(butonAnuleaza, &QPushButton::clicked, this, &QDialog::reject);
+	connect(comboTip, QOverload<int>::of(&QComboBox::currentIndexChanged),
+		this, &ReservationDialog::actualizeazaPret);
+	connect(spinLocuri, QOverload<int>::of(&QSpinBox::valueChanged),
+		this, &ReservationDialog::actualizeazaPret);
+	connect(butonRezerva, &QPushButton::clicked,
+		this, &ReservationDialog::on_rezervaButton_clicked);
+	connect(butonAnuleaza, &QPushButton::clicked,
+		this, &QDialog::reject);
+
+	actualizeazaPret();
 
 	actualizeazaPret(); // calculam pretul initial
 }
@@ -90,73 +93,63 @@ void ReservationDialog::actualizeazaPret()
 	QString tip = comboTip->currentText();
 	int nrLocuri = spinLocuri->value();
 
-	// actualizam maximul in functie de tipul ales
-	if (tip == "Regular")
-		spinLocuri->setMaximum(m_locuriRegular > 0 ? m_locuriRegular : 1);
-	else
-		spinLocuri->setMaximum(m_locuriPremium > 0 ? m_locuriPremium : 1);
-
 	double pret = (tip == "Regular") ? m_pretRegular : m_pretPremium;
-	double total = pret * nrLocuri;
+	int maxLocuri = (tip == "Regular") ? m_locuriRegular : m_locuriPremium;
 
-	labelPretTotal->setText(QString("Pret total: %1 RON").arg(total, 0, 'f', 2));
+	spinLocuri->setMaximum(maxLocuri > 0 ? maxLocuri : 1);
+
+	double total = pret * nrLocuri;
+	labelPretTotal->setText("Pret total: " +
+		QString::number(total, 'f', 2) + " RON");
 }
 
 
 void ReservationDialog::on_rezervaButton_clicked()
 {
+	if (!UserSession::getInstance().esteLogat) {
+		QMessageBox::warning(this, "Eroare", "Nu esti logat.");
+		return;
+	}
+
 	QString tip = comboTip->currentText();
-	int     nrLocuri = spinLocuri->value();
-	double  pret = (tip == "Regular") ? m_pretRegular : m_pretPremium;
-	double  total = pret * nrLocuri;
+	int nrLocuri = spinLocuri->value();
+	int maxLocuri = (tip == "Regular") ? m_locuriRegular : m_locuriPremium;
 
-	// verificam locuri disponibile
-	if (tip == "Regular" && nrLocuri > m_locuriRegular) {
-		QMessageBox::warning(this, "Eroare", "Nu sunt suficiente locuri Regular!");
-		return;
-	}
-	if (tip == "Premium" && nrLocuri > m_locuriPremium) {
-		QMessageBox::warning(this, "Eroare", "Nu sunt suficiente locuri Premium!");
+	if (maxLocuri <= 0) {
+		QMessageBox::warning(this, "Eroare",
+			"Nu mai sunt locuri " + tip + " disponibile.");
 		return;
 	}
 
-	// gasim id_categorie in functie de tip
-	QSqlQuery catQuery;
-	catQuery.prepare(
-		"SELECT cb.id_categorie FROM Categorii_Bilete cb "
-		"JOIN Transporturi t ON cb.id_transport = t.id_transport "
-		"JOIN Oferta o ON o.id_transport = t.id_transport "
-		"WHERE o.id_oferta = :idOferta AND cb.tip_clasa = :tip"
-	);
-	catQuery.bindValue(":idOferta", m_idOferta);
-	catQuery.bindValue(":tip", tip);
-	catQuery.exec();
+	double pret = (tip == "Regular") ? m_pretRegular : m_pretPremium;
+	double total = pret * nrLocuri;
 
-	if (!catQuery.next()) {
-		QMessageBox::critical(this, "Eroare", "Eroare la gasirea categoriei!");
+	// Trimitem comanda la server:
+   // REZERVA|id_user|id_oferta|tip_clasa|nr_locuri|pret_total
+	QString comanda = "REZERVA|" +
+		QString::number(UserSession::getInstance().id) + "|" +
+		QString::number(m_idOferta) + "|" +
+		tip + "|" +
+		QString::number(nrLocuri) + "|" +
+		QString::number(total, 'f', 2);
+
+	QStringList raspuns = ServerConnection::getInstance()
+		.trimiteComanda(comanda);
+
+	if (raspuns.isEmpty()) {
+		QMessageBox::critical(this, "Eroare", "Fara raspuns de la server.");
 		return;
 	}
 
-	int idCategorie = catQuery.value("id_categorie").toInt();
+	QStringList parts = raspuns[0].split('|');
 
-	// inseram rezervarea
-	QSqlQuery insertQuery;
-	insertQuery.prepare(
-		"INSERT INTO Rezervari (id_user, id_oferta, id_categorie, numar_locuri, pret_total) "
-		"VALUES (:idUser, :idOferta, :idCategorie, :nrLocuri, :pretTotal)"
-	);
-	insertQuery.bindValue(":idUser", UserSession::getInstance().id);
-	insertQuery.bindValue(":idOferta", m_idOferta);
-	insertQuery.bindValue(":idCategorie", idCategorie);
-	insertQuery.bindValue(":nrLocuri", nrLocuri);
-	insertQuery.bindValue(":pretTotal", total);
-
-	if (insertQuery.exec()) {
+	if (parts[0] == "OK") {
 		QMessageBox::information(this, "Succes",
-			QString("Rezervare facuta cu succes!\nPret total: %1 RON").arg(total, 0, 'f', 2));
+			"Rezervarea a fost efectuata cu succes!");
 		accept();
 	}
 	else {
-		QMessageBox::critical(this, "Eroare", "Eroare la rezervare: " + insertQuery.lastError().text());
+		QMessageBox::critical(this, "Eroare",
+			parts.size() > 1 ? parts[1] : "Rezervare esuata.");
 	}
 }

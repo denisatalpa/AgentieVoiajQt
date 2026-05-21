@@ -1,20 +1,15 @@
 ﻿#include "MainWindow.h"
-#include "LoginDialog.h"
-#include "SignUpDialog.h"
 #include "UserSession.h"
 #include "ReservationDialog.h"
-#include "ProfileDialog.h"
+#include "ServerConnection.h" 
 
-#include <QtSql/QSqlDatabase>
-#include <QtSql/QSqlQuery>
-#include <QtSql/QSqlError>
-#include <QtSql/QSqlRecord> // pt a accesa structura rezultatelor(coloane)
 #include <QDebug>
 #include <QMessageBox>
 
-#include <QDate>
 #include <QStringList> // pt lista de headeruri ale tabelului
 #include <QTableWidgetItem> // pt celulele din tabel
+
+#include <algorithm>   // pentru std::sort — demonstreaza operator
 
 
 void MainWindow::incarcaOferte()
@@ -22,76 +17,64 @@ void MainWindow::incarcaOferte()
 // curatam tabelul inante de a reincarca. daca nu am face ast, la fiecare
 //..apel s-ar adauga randuri noi peste cele vechi, rezultand duplicate
     ui.tableOffers->setRowCount(0);
+    m_oferte.clear();
 
-    // cand cream un obiect cu query ul in paranteza, acesta se executa automat
-    // nu mai trb sa apelam .exec() separat
-    QSqlQuery query(
-        "SELECT o.oras_plecare, o.oras_destinatie, o.data_plecare, o.data_intoarcere, t.tip, "
-        
-        "o.pret_standard * cr.multiplicator AS pret_regular, "
-        "o.pret_standard * cp.multiplicator AS pret_premium, "
 
-// asta e un subquery (query in query ul mare)
-// ia totalul locurilor din transporturi, scade suma locurilor deja rezervate pt oferta respectiva
-// ISNULL(...,0) - daca nu exista nicio rezervare, SUM returneaza NULL, iar noi il
-// inlocuim cu 0 ca sa nu stricam calculul
-        "t.locuri_totale_regular - ISNULL(( "
-        "    SELECT SUM(r.numar_locuri) FROM Rezervari r "
-        "    JOIN Categorii_Bilete cb ON r.id_categorie = cb.id_categorie "
-        "    WHERE r.id_oferta = o.id_oferta AND cb.tip_clasa = 'Regular' "
-        "), 0) AS locuri_regular, "
+    // Cerem ofertele de la server
+    QStringList linii = ServerConnection::getInstance()
+        .trimiteComanda("GET_OFFERS");
 
-        "t.locuri_totale_premium - ISNULL(( "
-        "    SELECT SUM(r.numar_locuri) FROM Rezervari r "
-        "    JOIN Categorii_Bilete cb ON r.id_categorie = cb.id_categorie "
-        "    WHERE r.id_oferta = o.id_oferta AND cb.tip_clasa = 'Premium' "
-        "), 0) AS locuri_premium "
-
-        "FROM Oferta o "
-        "JOIN Transporturi t ON o.id_transport = t.id_transport "
-
-        // facem join de 2 ori pe aceeasi tabelta categorii_bilete dar cu aliasuri diferite
-        // cr = regular, cp = premium, ca sa putem lua ambele multiplicatoare in acelasi timp
-        "JOIN Categorii_Bilete cr ON cr.id_transport = t.id_transport AND cr.tip_clasa = 'Regular' "
-        "JOIN Categorii_Bilete cp ON cp.id_transport = t.id_transport AND cp.tip_clasa = 'Premium'"
-    );
-
+    // Fiecare linie: id|plecare|destinatie|dataPlecare|dataIntoarcere|
+    //                transport|pretRegular|pretPremium|pretStandard|
+    //                locuriRegular|locuriPremium
     int row = 0;
-    while (query.next()) { // merge la urmatorul rand din rezultat
-        // returneaza false daca nu mai sunt randuri
-        // row tine evidetna pe ce linie din tabel inseram
+    for (const QString& linie : linii) {
+        QStringList p = linie.split('|');
+        if (p.size() < 11) continue;
 
-        ui.tableOffers->insertRow(row); // adaugam randul
+        OfertaInfo o;
+        o.id = p[0].toInt();
+        o.plecare = p[1];
+        o.destinatie = p[2];
+        o.dataPlecare = p[3];
+        o.dataIntoarcere = p[4];
+        o.transport = p[5];
+        o.pretRegular = p[6].toDouble();
+        o.pretPremium = p[7].toDouble();
+        o.locuriRegular = p[9].toInt();
+        o.locuriPremium = p[10].toInt();
 
-        // salvam id_oferta ascuns in primul item (nu il afisam dar il folosim la rezervare)
-        QTableWidgetItem* itemId = new QTableWidgetItem(query.value("id_oferta").toString());
-        itemId->setData(Qt::UserRole, query.value("id_oferta").toInt());
-// id_oferta e stocat ca data ascunsa (qtȘȘuserrole) in celula. nu il afisam (coloana 0 afiseaza oras_plecare)
-// dar il pastram pentru a-l folosi la clic, altfel nu stim ce oferta a selectat userul
+        qDebug() << o;   // operator
+        m_oferte.append(o);
 
+        auto item = [](const QString& t) {
+            return new QTableWidgetItem(t);
+            };
 
-        //setItem(row, coloana, item) - pune o celula noua la pozitia specificata
-        //query.value("oras_plecare") - ia valoarea coloanei cu numele dat din rezultatul query ului
-        // new qtablewidgetitem() cream celula vizuala cu textul respectiv
-        ui.tableOffers->setItem(row, 0, new QTableWidgetItem(query.value("oras_plecare").toString()));
-        ui.tableOffers->setItem(row, 1, new QTableWidgetItem(query.value("oras_destinatie").toString()));
-        ui.tableOffers->setItem(row, 2, new QTableWidgetItem(query.value("data_plecare").toDate().toString("yyyy-MM-dd")));
-        ui.tableOffers->setItem(row, 3, new QTableWidgetItem(query.value("data_intoarcere").toDate().toString("yyyy-MM-dd")));
-        ui.tableOffers->setItem(row, 4, new QTableWidgetItem(query.value("tip").toString()));
-        ui.tableOffers->setItem(row, 5, new QTableWidgetItem(QString::number(query.value("pret_regular").toDouble(), 'f', 2)));
-        ui.tableOffers->setItem(row, 6, new QTableWidgetItem(QString::number(query.value("pret_premium").toDouble(), 'f', 2)));
-        ui.tableOffers->setItem(row, 7, new QTableWidgetItem(query.value("locuri_regular").toString()));
-        ui.tableOffers->setItem(row, 8, new QTableWidgetItem(query.value("locuri_premium").toString()));
-        
-        // salvam id_oferta si preturile in UserRole ca sa le accesam la click
-        ui.tableOffers->item(row, 0)->setData(Qt::UserRole, query.value("id_oferta").toInt());
-        ui.tableOffers->item(row, 5)->setData(Qt::UserRole, query.value("pret_regular").toDouble());
-        ui.tableOffers->item(row, 6)->setData(Qt::UserRole, query.value("pret_premium").toDouble());
-        ui.tableOffers->item(row, 7)->setData(Qt::UserRole, query.value("locuri_regular").toInt());
-        ui.tableOffers->item(row, 8)->setData(Qt::UserRole, query.value("locuri_premium").toInt());
-        
+        ui.tableOffers->insertRow(row);
+        ui.tableOffers->setItem(row, 0, item(o.plecare));
+        ui.tableOffers->setItem(row, 1, item(o.destinatie));
+        ui.tableOffers->setItem(row, 2, item(o.dataPlecare));
+        ui.tableOffers->setItem(row, 3, item(o.dataIntoarcere));
+        ui.tableOffers->setItem(row, 4, item(o.transport));
+        ui.tableOffers->setItem(row, 5,
+            item(QString::number(o.pretRegular, 'f', 2)));
+        ui.tableOffers->setItem(row, 6,
+            item(QString::number(o.pretPremium, 'f', 2)));
+        ui.tableOffers->setItem(row, 7,
+            item(QString::number(o.locuriRegular)));
+        ui.tableOffers->setItem(row, 8,
+            item(QString::number(o.locuriPremium)));
         row++;
     }
+
+    // Demonstratie operator< : sortam o copie dupa pret
+    QVector<OfertaInfo> sortate = m_oferte;
+    std::sort(sortate.begin(), sortate.end());
+    if (!sortate.isEmpty())
+        qDebug() << "Cea mai ieftina oferta:" << sortate.first();
+
+
 }
 
 
@@ -167,7 +150,10 @@ MainWindow::MainWindow(QWidget *parent)
     //click pe o linie din tabel
     connect(ui.tableOffers, &QTableWidget::cellClicked, this, &MainWindow::onOfertaSelectata);
 
-
+/*______________________________________________________________________________
+// 
+// conectarea la bd inainte sa o fi facut singleton
+// 
 	// aici ca sa ne conectam la baza noastra de date
 
     //cream o conexiune la bd folosind driverul QODBC (e driverul qt care foloseste
@@ -183,8 +169,17 @@ MainWindow::MainWindow(QWidget *parent)
 		qDebug() << "Eroare la conectarea bazei: " << db.lastError().text();
 		return;
 	}
+// ___________________________________________________________________________ */
 
-	incarcaOferte();
+
+// Conectare la server (in loc de conectare directa la BD)
+    if (!ServerConnection::getInstance().conecteaza("127.0.0.1", 12345)) {
+        QMessageBox::critical(this, "Eroare",
+            "Nu ma pot conecta la server!\nAsigura-te ca server.exe ruleaza.");
+        return;
+    }
+
+    incarcaOferte();
 }
 
 
@@ -204,6 +199,12 @@ void MainWindow::on_loginButton_clicked()
         return;
     }
 
+    // factory method: nu stim (si nu ne intereseaza) cum e construit dialogul
+    if (m_loginFactory.deschideDialog(this) == QDialog::Accepted)
+        actualizeazaStatus();
+
+
+/* nu ne mai trb partea ast pt ca am facut factory
 
 	LoginDialog login(this);
     //cream cu this ca parinte pt ca mainwindow e printele dialogului
@@ -216,20 +217,32 @@ void MainWindow::on_loginButton_clicked()
 
 // acelasi buton gestioneaza 2 stari: daca e logat atunci facem delogare, daca nu atunci deschide logindialog
 // verificam rezultatul lui exec, daca userul a dat accepted(adica login reusit) actualizam statusul
+
+*/
+
 }
 
 
 void MainWindow::on_signupButton_clicked()
 {
+    m_signupFactory.deschideDialog(this);
+
+/* nu mai facem asa pt ca am facut factory
+
 	SignUpDialog signup(this);
 	signup.exec();
+*/
 }
 
 
 void MainWindow::deschideProfilulMeu()
 {
+    m_profileFactory.deschideDialog(this);
+
+/*
     ProfileDialog profil(this);
     profil.exec();
+*/
 }
 
 
@@ -242,6 +255,10 @@ void MainWindow::onOfertaSelectata(int row, int col)
         return;
     }
 
+
+/* ---------------------------------------------------------------------------
+* nu ne mai trb partea asta pt ca am facut ofertaInfo
+* 
     // luam datele ofertei din randul selectat
     int     idOferta = ui.tableOffers->item(row, 0)->data(Qt::UserRole).toInt();
     QString plecare = ui.tableOffers->item(row, 0)->text();
@@ -267,10 +284,53 @@ void MainWindow::onOfertaSelectata(int row, int col)
         locuriRegular, locuriPremium
     );
 
+______________________________________________________________________________________
+*/
+
+    if (row < 0 || row >= m_oferte.size())
+        return;
+
+    // lua oferta din lista, folosim operator== daca vrem sa verificam
+    const OfertaInfo& oferta = m_oferte[row];
+
+    // dem operator== (verificam daca oferta mai are locuri)
+    // construim o oferta "goala" cu 0 locuri si comparam id-ul
+    OfertaInfo verificare;
+    verificare.id = oferta.id;
+
+    if (oferta == verificare)
+    {
+        // daca sunt egale dupa id, dar in practica nu ajungem aici pt ca verificare.id
+        // e setat la fel. doar demontram functionalitatea lui ==
+    }
+
+    if (oferta.locuriRegular <= 0 && oferta.locuriPremium <= 0)
+    {
+        QMessageBox::information(this, "Oferta indisponibila",
+            "Nu mai sunt locuri disponibile pentru aceasta oferta.");
+        return;
+    }
+
+
+    ReservationDialog rezervare(
+        this,
+        oferta.id,
+        oferta.plecare,
+        oferta.destinatie,
+        oferta.dataPlecare,
+        oferta.dataIntoarcere,
+        oferta.transport,
+        oferta.pretRegular,
+        oferta.pretPremium,
+        oferta.locuriRegular,
+        oferta.locuriPremium
+    );
+
+
     if (rezervare.exec() == QDialog::Accepted) {
         incarcaOferte();
     }
-// dupa o rezervare reusita (accepted) reincarcam ofertele ca sa se updateze locurile disponibile
-// daca nu am face asta, tabelul ar afisa locuri vechi pana la urmatoarea deschidere a aplicatiei
+    // dupa o rezervare reusita (accepted) reincarcam ofertele ca sa se updateze locurile disponibile
+    // daca nu am face asta, tabelul ar afisa locuri vechi pana la urmatoarea deschidere a aplicatiei
 }
 

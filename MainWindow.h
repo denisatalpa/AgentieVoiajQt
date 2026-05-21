@@ -3,7 +3,11 @@
 #include <QMainWindow>
 #include <QLabel>
 #include <QPushButton>
+#include <QVector>
+
 #include "ui_MainWindow.h"
+#include "DialogFactory.h"
+#include "OfertaInfo.h"
 
 class MainWindow : public QMainWindow // preia toate functionalitatile unei ferestre principale qt
 {
@@ -34,5 +38,13 @@ private:
 
 	QLabel* labelStatus; // guest sau logat ca: X
 	QPushButton* butonProfilulMeu; // "contul meu"
+
+	// lista de oferte incarcate dn bd (folosita si cu operatorii din ofertainfo)
+	QVector<OfertaInfo> m_oferte;
+
+	// factory methof, fiecare factory stie sa creeze un anumit tip de dialog
+	LoginDialogFactory m_loginFactory;
+	SignUpDialogFactory  m_signupFactory;
+	ProfileDialogFactory m_profileFactory;
 };
 
